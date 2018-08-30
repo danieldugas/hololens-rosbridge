@@ -51,13 +51,98 @@ namespace ros
 
         }
 
+        public class RegionOfInterest : IRosClassInterface
+        {
+            public System.UInt32 x_offset;
+            public System.UInt32 y_offset;
+            public System.UInt32 height;
+            public System.UInt32 width;
+            public bool do_rectify;
+
+            public RegionOfInterest()
+            {
+                x_offset = 0;
+                y_offset = 0;
+                height = 0;
+                width = 0;
+                do_rectify = false;
+            }
+
+            public void FromJSON(JSONNode msg)
+            {
+                x_offset = (System.UInt32)msg["x_offset"].AsDouble;
+                y_offset = (System.UInt32)msg["y_offset"].AsDouble;
+                height = (System.UInt32)msg["height"].AsDouble;
+                width = (System.UInt32)msg["width"].AsDouble;
+                do_rectify = (msg["width"].AsDouble != 0);
+            }
+            public System.String ToJSON()
+            {
+                // TODO
+                System.String ret = "{";
+                return ret;
+            }
+        }
+
+        public class CameraInfo : IRosClassInterface
+        {
+            public std_msgs.Header header;
+            public System.UInt32 height;
+            public System.UInt32 width;
+            public System.String distortion_model;
+            public double[] D;
+            public double[] K;
+            public double[] R;
+            public double[] P;
+            public System.UInt32 binning_x;
+            public System.UInt32 binning_y;
+            public sensor_msgs.RegionOfInterest roi;
+
+            public CameraInfo()
+            {
+                header = new std_msgs.Header();
+                height = 0;
+                width = 0;
+                distortion_model = "";
+                D = new double[] { };
+                K = new double[9];
+                R = new double[9];
+                P = new double[12];
+                binning_x = 0;
+                binning_y = 0;
+                roi = new sensor_msgs.RegionOfInterest();
+            }
+            public void FromJSON(JSONNode msg)
+            {
+                header.FromJSON(msg["header"]);
+                height = (System.UInt32)msg["height"].AsDouble;
+                width = (System.UInt32)msg["width"].AsDouble;
+                distortion_model = msg["encoding"].Value;
+                if ((int)width < 0 || (int)height < 0) { throw new System.Exception("2 big 4 u."); }
+                int i = 0;
+                foreach (JSONNumber val in msg["K"].AsArray)
+                {
+                    K[i] = val.AsDouble;
+                    i++;
+                }
+                // TODO
+            }
+            public System.String ToJSON()
+            {
+                // TODO
+                System.String ret = "{";
+                ret += "]}";
+                return ret;
+            }
+        }
+
         public class Image : IRosClassInterface
         {
             public std_msgs.Header header;
             public System.UInt32 height;
             public System.UInt32 width;
             public System.String encoding;
-            public byte is_bigendian;
+            public bool is_bigendian;
             public byte[] data;
             public System.UInt32 step;
 
@@ -68,12 +153,12 @@ namespace ros
                 height = 0;
                 width = 0;
                 encoding = "";
-                is_bigendian = 0;
+                is_bigendian = false;
                 data = new byte[] { };
                 step = 0;
             }
             public Image(std_msgs.Header _header, System.UInt32 _height, System.UInt32 _width,
-                         System.String _encoding, byte _is_bigendian, byte[] _data, System.UInt32 _step)
+                         System.String _encoding, bool _is_bigendian, byte[] _data, System.UInt32 _step)
             {
                 header = _header;
                 height = _height;
@@ -113,9 +198,9 @@ namespace ros
                     // This is a strange conversion, 
                     int n_pixels = data.Length / 2;
                     byte[] bytes = new byte[3 * n_pixels];
-                    for (int i = 0; i < n_pixels; i ++)
+                    for (int i = 0; i < n_pixels; i++)
                     {
-                        if (is_bigendian == (byte)0)
+                        if (is_bigendian == false)
                         {
                             // first half of 16bit int goes to green channel,
                             // second half to green & blue.
@@ -145,17 +230,17 @@ namespace ros
                 if (encoding == "16UC1")
                 {
                     int[] ints = new int[data.Length / 2];
-                    for (int i = 0; 2*i < data.Length; i++)
+                    for (int i = 0; 2 * i < data.Length; i++)
                     {
-                        if (is_bigendian == (byte)0)
+                        if (is_bigendian == false)
                         {
                             // Reverse pixel & channel order
-                            ints[ints.Length - 1 - i] = data[2 * i] + (8 << data[2 * i + 1]);
+                            ints[ints.Length - 1 - i] = data[2 * i] + (data[2 * i + 1] << 8);
                         }
                         else
                         {
                             // Reverse only pixel order
-                            ints[ints.Length - 1 - i] = (8 << data[2 * i]) + data[2 * i + 1];
+                            ints[ints.Length - 1 - i] = (data[2 * i] << 8) + data[2 * i + 1];
                         }
                     }
                     return ints;
@@ -173,7 +258,7 @@ namespace ros
                 height = (System.UInt32)msg["height"].AsDouble;
                 width = (System.UInt32)msg["width"].AsDouble;
                 encoding = msg["encoding"].Value;
-                is_bigendian = (byte)msg["is_bigendian"].AsDouble;
+                is_bigendian = (msg["is_bigendian"].AsDouble != 0);
                 data = System.Convert.FromBase64String(msg["data"].Value);
                 step = (System.UInt32)msg["step"].AsDouble;
                 foreach (var t in msg["axes"].Children) ;
@@ -184,9 +269,9 @@ namespace ros
                 System.String ret = "{";
                 ret += "\"header\": " + header.ToJSON() + ", ";
                 ret += "\"axes\": [";
-              //  ret += System.String.Join(", ", axes.Select(a => a.ToString()).ToArray());
+                //  ret += System.String.Join(", ", axes.Select(a => a.ToString()).ToArray());
                 ret += "], \"buttons\": [";
-              //  ret += System.String.Join(", ", buttons.Select(a => a.ToString()).ToArray());
+                //  ret += System.String.Join(", ", buttons.Select(a => a.ToString()).ToArray());
                 ret += "]}";
                 return ret;
             }

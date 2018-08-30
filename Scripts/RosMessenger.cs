@@ -153,7 +153,7 @@ public class RosMessenger : HoloToolkit.Unity.Singleton<RosMessenger>
 
     private void Win_MessageReceived(MessageWebSocket sender, MessageWebSocketMessageReceivedEventArgs args)
     {
-        Debug.Log("Message received!.");
+        // Debug.Log("Message received!.");
         try
         {
             DataReader messageReader = args.GetDataReader();
